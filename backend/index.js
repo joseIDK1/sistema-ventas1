@@ -220,6 +220,67 @@ app.get('/api/sales', async (req, res) => {
   res.json(sales);
 });
 
+// --- SEMBRAR TODO ---
+app.post('/api/seed-all', async (req, res) => {
+  try {
+    const defaultCategories = [
+      { name: 'Bebidas', description: 'Gaseosas, jugos, aguas y licores' },
+      { name: 'Abarrotes', description: 'Arroz, frijoles, aceite, azúcar, etc.' },
+      { name: 'Lácteos', description: 'Leche, queso, crema, yogurt' },
+      { name: 'Snacks y Dulces', description: 'Papas, galletas, chocolates' },
+      { name: 'Limpieza', description: 'Jabón, cloro, detergentes' },
+      { name: 'Cuidado Personal', description: 'Shampoo, desodorante, papel higiénico' },
+      { name: 'Carnes y Embutidos', description: 'Pollo, res, salchichas, jamón' },
+      { name: 'Frutas y Verduras', description: 'Vegetales frescos' }
+    ];
+
+    const sampleProducts = [
+      { name: 'Coca Cola 2.5L', description: 'Gaseosa original', price: 2.50, stock: 50, categoryName: 'Bebidas' },
+      { name: 'Agua Mineral 1L', description: 'Agua con gas', price: 1.00, stock: 100, categoryName: 'Bebidas' },
+      { name: 'Jugo del Valle', description: 'Jugo de manzana', price: 1.25, stock: 40, categoryName: 'Bebidas' },
+      { name: 'Arroz San Pedro 1kg', description: 'Arroz blanco entero', price: 1.80, stock: 200, categoryName: 'Abarrotes' },
+      { name: 'Frijol Negro 1kg', description: 'Frijol empacado', price: 2.10, stock: 150, categoryName: 'Abarrotes' },
+      { name: 'Aceite de Girasol 1L', description: 'Aceite vegetal', price: 3.50, stock: 80, categoryName: 'Abarrotes' },
+      { name: 'Leche Deslactosada 1L', description: 'Leche de vaca', price: 1.60, stock: 60, categoryName: 'Lácteos' },
+      { name: 'Queso Crema 200g', description: 'Para untar', price: 2.20, stock: 35, categoryName: 'Lácteos' },
+      { name: 'Papas Lays', description: 'Sabor original', price: 1.50, stock: 120, categoryName: 'Snacks y Dulces' },
+      { name: 'Galletas Oreo', description: 'Paquete grande', price: 1.10, stock: 90, categoryName: 'Snacks y Dulces' },
+      { name: 'Jabón Zote', description: 'Para lavar ropa', price: 0.90, stock: 300, categoryName: 'Limpieza' },
+      { name: 'Cloro 1 Galón', description: 'Desinfectante', price: 4.00, stock: 45, categoryName: 'Limpieza' },
+      { name: 'Shampoo Head & Shoulders', description: 'Anticaspa', price: 5.50, stock: 25, categoryName: 'Cuidado Personal' },
+      { name: 'Papel Higiénico 4 Rollos', description: 'Doble hoja', price: 2.80, stock: 100, categoryName: 'Cuidado Personal' },
+    ];
+
+    for (const cat of defaultCategories) {
+      const existing = await prisma.category.findFirst({ where: { name: cat.name } });
+      if (!existing) await prisma.category.create({ data: cat });
+    }
+
+    const categories = await prisma.category.findMany();
+    for (const prod of sampleProducts) {
+      const category = categories.find(c => c.name === prod.categoryName);
+      if (category) {
+        const exists = await prisma.product.findFirst({ where: { name: prod.name } });
+        if (!exists) {
+          await prisma.product.create({
+            data: {
+              name: prod.name,
+              description: prod.description,
+              price: prod.price,
+              stock: prod.stock,
+              categoryId: category.id
+            }
+          });
+        }
+      }
+    }
+
+    res.json({ message: 'Base de datos sembrada con productos y categorías exitosamente' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
